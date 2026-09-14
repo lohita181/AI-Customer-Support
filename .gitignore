@@ -1,0 +1,4 @@
+twcs.csv
+__pycache__/
+*.env
+.venv/
