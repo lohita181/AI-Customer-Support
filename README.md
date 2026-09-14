@@ -24,7 +24,15 @@ A good support agent for Apple must correctly identify hardware vs software issu
 **What I chose NOT to build:**
 I intentionally chose not to build multi-turn context memory or RAG (Retrieval-Augmented Generation). Twitter customer support is usually resolved quickly in DMs or requires an immediate pivot from public tweet to DM. The first touchpoint classification is the most critical to route it correctly.
 
-## 3. Results vs. Baselines
+## 3. Golden Dataset Sampling & Labeling
+
+**Sampling Strategy:**
+The Kaggle dataset was first filtered for conversations exclusively involving `@AppleSupport` as the responding brand. From the resulting ~106k reconstructed threads (customer message -> brand reply), we took a completely random sample of 200 rows to create our evaluation set. A random sample was chosen over keyword stratification to accurately reflect the real-world highly skewed distribution of inbound customer requests.
+
+**Labeling Strategy:**
+To label the 200 examples rapidly and consistently, we utilized an LLM (Gemini 2.5 Flash) to perform a first pass across the sampled rows, classifying each into one of six predefined intents and making an escalation decision with reasoning. As a human-in-the-loop, these labels were then audited to ensure they made logical sense for the context. This generated our `golden_dataset.csv`.
+
+## 4. Results vs. Baselines
 
 Our `eval.py` tests against three systems:
 - **Trivial Baseline:** Always predicts majority class intent (`general_inquiry`) and always escalates.
@@ -33,7 +41,7 @@ Our `eval.py` tests against three systems:
 
 *See `eval_results.txt` for exact F1 and Accuracy scores.*
 
-## 4. Failure Analysis
+## 5. Failure Analysis
 
 Through inspecting the Golden Dataset and the Agent's predictions, here are the top failure modes:
 1. **Sarcasm / Implicit Frustration:** The LLM struggles to detect when a user is being sarcastic about a "great update" that actually broke their phone. (Hypothesis: Needs few-shot examples of sarcasm).
@@ -42,16 +50,16 @@ Through inspecting the Golden Dataset and the Agent's predictions, here are the 
 4. **Third-Party App Confusion:** If a user complains about Spotify crashing on iOS, the model classifies it as a `software_bug` for Apple to fix, instead of auto-handling and directing them to the third-party developer.
 5. **Vague Pronouns:** "It isn't working." The model guesses `hardware_issue` but it could be anything. 
 
-## 5. What is misleading about my headline number?
+## 6. What is misleading about my headline number?
 
 The high Intent Accuracy (e.g. ~85%+) is highly misleading because the dataset is extremely skewed. A vast majority of tweets sent to `@AppleSupport` fall under `general_inquiry` or `software_bug`. A trivial baseline that just predicts the most common class will score decently high. The real test is the *precision* on rare intents (like billing issues), which the headline accuracy number obscures. 
 
-## 6. What I'd do with one more week
+## 7. What I'd do with one more week
 - **Implement RAG:** Use vector embeddings of historical support docs so the drafted replies contain real, accurate troubleshooting steps.
 - **Active Learning:** Instead of randomly sampling 200 rows, use the model to find the 200 rows it is *least confident* about, and hand-label those to improve the edge cases.
 - **Prompt A/B Testing:** Build a rigorous test framework (like `promptfoo`) to test different system prompts to minimize API costs (token usage) without dropping accuracy.
 
-## 7. Decision Log
+## 8. Decision Log
 
 1. **Brand Choice (`@AppleSupport`):** Selected because they handle both physical hardware and digital services, making intent classification non-trivial.
 2. **LLM Provider (Gemini 2.5 Flash):** Selected for its very low latency, cheap cost, and excellent native JSON structure generation via `response_schema`.
