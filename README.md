@@ -15,6 +15,13 @@ This repository contains the complete pipeline for the Hiver SDE Intern take-hom
    ```bash
    python eval.py
    ```
+5. **(Optional) Test the agent manually:** If you'd like to test the agent interactively with your own custom tweets without running the full evaluation, you can open a Python shell and call the function directly:
+   ```python
+   # Inside your python shell
+   from agent import run_agent
+   result = run_agent("My iPhone battery is draining so fast after the update!")
+   print(result)
+   ```
 
 ## 2. Problem Framing
 
